@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Random Aesthetic Generator</title>
+
+<!-- UI Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --bg: #f9fafb;
+  --text: #111;
+  --card: #fff;
+  --accent: #6366f1;
+}
+
+html.theme-dark {
+  --bg: #1e1e1e;
+  --text: #f3f3f3;
+  --card: #2a2a2a;
+}
+
+body {
+  margin: 0;
+  font-family: 'Source Sans 3', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  padding: 1rem 2rem;
+}
+
+main {
+  max-width: 1100px;
+  margin: auto;
+  padding: 1rem;
+}
+
+.card {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+button {
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.swatches {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.swatch {
+  flex: 1;
+  min-width: 100px;
+  padding: 1rem;
+  border-radius: 8px;
+  color: #000;
+  cursor: pointer;
+}
+
+.preview {
+  padding: 1rem;
+  border: 1px dashed #ccc;
+}
+
+.badge {
+  font-size: 0.75rem;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: #eee;
+  margin-left: 4px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .swatch { transition: all 0.2s ease; }
+}
+</style>
+</head>
+
+<body>
+<header>
+  <h1>Random Aesthetic Generator</h1>
+  <button id="themeToggle">Toggle Theme</button>
+</header>
+
+<main>
+  <div class="card">
+    <button id="shuffle">Shuffle</button>
+    <button id="save">Save</button>
+    <button id="copyCSS">Copy CSS</button>
+    <button id="exportJSON">Export JSON</button>
+  </div>
+
+  <div class="card">
+    <h2>Palette</h2>
+    <div class="swatches" id="palette"></div>
+  </div>
+
+  <div class="card">
+    <h2>Fonts</h2>
+    <div id="fontInfo"></div>
+    <div class="preview" id="preview"></div>
+  </div>
+
+  <div class="card">
+    <h2>Favorites</h2>
+    <div id="favorites"></div>
+  </div>
+</main>
+
+<footer style="text-align:center;font-size:12px;padding:1rem;">
+  Space = Shuffle · S = Save · C = Copy CSS
+</footer>
+
+<script>
+const fonts = [
+  { heading: 'Playfair Display', body: 'Inter' },
+  { heading: 'Poppins', body: 'Roboto' },
+  { heading: 'Merriweather', body: 'Source Sans 3' },
+  { heading: 'Oswald', body: 'Inter' }
+];
+
+const palettes = [
+  ['#111827','#1f2937','#374151','#9ca3af'],
+  ['#ff6b6b','#ffe66d','#4ecdc4','#1a535c'],
+  ['#000','#ff0054','#00f5d4','#ffd166']
+];
+
+let current = { palette: palettes[0], fonts: fonts[0] };
+
+function getRandomPalette() {
+  return palettes[Math.floor(Math.random() * palettes.length)];
+}
+
+function pickFontPair() {
+  return fonts[Math.floor(Math.random() * fonts.length)];
+}
+
+function applyFonts(pair) {
+  const link = document.createElement('link');
+  link.href = `https://fonts.googleapis.com/css2?family=${pair.heading.replace(/ /g,'+')}\n  &family=${pair.body.replace(/ /g,'+')}&display=swap`;
+  link.rel = 'stylesheet';
+  document.head.appendChild(link);
+
+  document.getElementById('preview').style.fontFamily = pair.body;
+}
+
+function renderPalette(palette) {
+  const container = document.getElementById('palette');
+  container.innerHTML = '';
+
+  palette.forEach(color => {
+    const div = document.createElement('div');
+    div.className = 'swatch';
+    div.style.background = color;
+    div.textContent = color;
+
+    div.onclick = () => navigator.clipboard.writeText(color);
+
+    container.appendChild(div);
+  });
+}
+
+function renderPreview() {
+  const p = document.getElementById('preview');
+  p.innerHTML = `<h1>Heading</h1><p>Sample paragraph text.</p><button>Button</button>`;
+}
+
+function shuffle() {
+  current.palette = getRandomPalette();
+  current.fonts = pickFontPair();
+  applyFonts(current.fonts);
+  renderPalette(current.palette);
+  renderPreview();
+}
+
+function saveFavorite() {
+  let favs = JSON.parse(localStorage.getItem('aesthetic.favorites')||'[]');
+  favs.push(current);
+  localStorage.setItem('aesthetic.favorites', JSON.stringify(favs));
+  loadFavorites();
+}
+
+function loadFavorites() {
+  const container = document.getElementById('favorites');
+  container.innerHTML = '';
+  let favs = JSON.parse(localStorage.getItem('aesthetic.favorites')||'[]');
+
+  favs.forEach((f,i) => {
+    const div = document.createElement('div');
+    div.textContent = f.palette.join(',');
+    div.onclick = () => {
+      current = f;
+      renderPalette(f.palette);
+      applyFonts(f.fonts);
+      renderPreview();
+    };
+
+    const del = document.createElement('button');
+    del.textContent = 'Delete';
+    del.onclick = (e) => {
+      e.stopPropagation();
+      favs.splice(i,1);
+      localStorage.setItem('aesthetic.favorites', JSON.stringify(favs));
+      loadFavorites();
+    };
+
+    div.appendChild(del);
+    container.appendChild(div);
+  });
+}
+
+function exportCSSVars() {
+  const css = current.palette.map((c,i)=>`--color-${i+1}: ${c};`).join('\n');
+  navigator.clipboard.writeText(css);
+}
+
+function exportJSON() {
+  const data = JSON.stringify(current);
+  const blob = new Blob([data], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'aesthetic.json';
+  a.click();
+}
+
+// Events
+
+document.getElementById('shuffle').onclick = shuffle;
+document.getElementById('save').onclick = saveFavorite;
+document.getElementById('copyCSS').onclick = exportCSSVars;
+document.getElementById('exportJSON').onclick = exportJSON;
+
+document.getElementById('themeToggle').onclick = () => {
+  document.documentElement.classList.toggle('theme-dark');
+  localStorage.setItem('aesthetic.settings', document.documentElement.classList.contains('theme-dark'));
+};
+
+window.addEventListener('keydown', e => {
+  if (e.code === 'Space') shuffle();
+  if (e.key.toLowerCase() === 's') saveFavorite();
+  if (e.key.toLowerCase() === 'c') exportCSSVars();
+});
+
+// Init
+shuffle();
+loadFavorites();
+</script>
+</body>
+</html>
