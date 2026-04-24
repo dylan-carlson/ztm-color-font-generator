@@ -1,264 +1,1092 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Random Aesthetic Generator</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aesthetic Generator</title>
+    <meta name="description" content="Generate cohesive color palettes and font pairings.">
+    
+    <!-- UI Shell Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
 
-<!-- UI Fonts -->
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        /* ==========================================================================
+           CSS Variables (UI Chrome)
+           ========================================================================== */
+        :root {
+            /* Light Theme Defaults */
+            --ui-bg: #f9fafb;
+            --ui-surface: #ffffff;
+            --ui-border: #e5e7eb;
+            --ui-text-main: #111827;
+            --ui-text-muted: #6b7280;
+            --ui-accent: #6366f1;
+            --ui-accent-hover: #4f46e5;
+            --ui-accent-subtle: #e0e7ff;
+            --ui-danger: #ef4444;
+            --ui-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            --ui-radius: 0.75rem;
 
-<style>
-:root {
-  --bg: #f9fafb;
-  --text: #111;
-  --card: #fff;
-  --accent: #6366f1;
-}
+            --font-ui-heading: 'Inter', system-ui, sans-serif;
+            --font-ui-body: 'Source Sans 3', system-ui, sans-serif;
 
-html.theme-dark {
-  --bg: #1e1e1e;
-  --text: #f3f3f3;
-  --card: #2a2a2a;
-}
+            /* Transitions */
+            --transition-speed: 200ms;
+        }
 
-body {
-  margin: 0;
-  font-family: 'Source Sans 3', sans-serif;
-  background: var(--bg);
-  color: var(--text);
-}
+        /* Dark Theme Overrides */
+        html.theme-dark {
+            --ui-bg: #1e1e1e;
+            --ui-surface: #2d2d2d;
+            --ui-border: #404040;
+            --ui-text-main: #f9fafb;
+            --ui-text-muted: #9ca3af;
+            --ui-accent: #818cf8;
+            --ui-accent-hover: #6366f1;
+            --ui-accent-subtle: #3730a3;
+            --ui-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+        }
 
-header {
-  display: flex;
-  justify-content: space-between;
-  padding: 1rem 2rem;
-}
+        /* Generated Preview Overrides (injected dynamically via JS but defaults here) */
+        .preview-content {
+            --gen-font-heading: sans-serif;
+            --gen-font-body: sans-serif;
+            --gen-color-1: #000;
+            --gen-color-2: #fff;
+        }
 
-main {
-  max-width: 1100px;
-  margin: auto;
-  padding: 1rem;
-}
+        /* ==========================================================================
+           Reset & Base
+           ========================================================================== */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
-.card {
-  background: var(--card);
-  border-radius: 12px;
-  padding: 1rem;
-  margin-bottom: 1rem;
-}
+        body {
+            font-family: var(--font-ui-body);
+            background-color: var(--ui-bg);
+            color: var(--ui-text-main);
+            line-height: 1.5;
+            transition: background-color var(--transition-speed) ease, color var(--transition-speed) ease;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
 
-button {
-  background: var(--accent);
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  cursor: pointer;
-}
+        h1, h2, h3, h4, .ui-heading {
+            font-family: var(--font-ui-heading);
+            font-weight: 600;
+            color: var(--ui-text-main);
+        }
 
-.swatches {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
+        a, button {
+            all: unset;
+            cursor: pointer;
+            box-sizing: border-box;
+        }
 
-.swatch {
-  flex: 1;
-  min-width: 100px;
-  padding: 1rem;
-  border-radius: 8px;
-  color: #000;
-  cursor: pointer;
-}
+        button:focus-visible, a:focus-visible {
+            outline: 2px solid var(--ui-accent);
+            outline-offset: 2px;
+            border-radius: 4px;
+        }
 
-.preview {
-  padding: 1rem;
-  border: 1px dashed #ccc;
-}
+        @media (prefers-reduced-motion: reduce) {
+            *, ::before, ::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+        }
 
-.badge {
-  font-size: 0.75rem;
-  padding: 2px 6px;
-  border-radius: 6px;
-  background: #eee;
-  margin-left: 4px;
-}
+        /* ==========================================================================
+           Layout
+           ========================================================================== */
+        header {
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--ui-border);
+            background: var(--ui-surface);
+        }
 
-@media (prefers-reduced-motion: no-preference) {
-  .swatch { transition: all 0.2s ease; }
-}
-</style>
+        main {
+            flex: 1;
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 2rem;
+            align-items: start;
+        }
+
+        @media (max-width: 1024px) {
+            main {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ==========================================================================
+           Components
+           ========================================================================== */
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-family: var(--font-ui-heading);
+            font-weight: 500;
+            font-size: 0.875rem;
+            transition: all var(--transition-speed) ease;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background-color: var(--ui-accent);
+            color: #ffffff;
+        }
+
+        .btn-primary:hover { background-color: var(--ui-accent-hover); }
+
+        .btn-secondary {
+            background-color: var(--ui-surface);
+            color: var(--ui-text-main);
+            border: 1px solid var(--ui-border);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--ui-bg);
+            border-color: var(--ui-text-muted);
+        }
+
+        .btn-icon {
+            padding: 0.5rem;
+            border-radius: 50%;
+            color: var(--ui-text-muted);
+            transition: color var(--transition-speed), background-color var(--transition-speed);
+        }
+        .btn-icon:hover {
+            color: var(--ui-text-main);
+            background-color: var(--ui-border);
+        }
+
+        /* Cards */
+        .card {
+            background-color: var(--ui-surface);
+            border: 1px solid var(--ui-border);
+            border-radius: var(--ui-radius);
+            box-shadow: var(--ui-shadow);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            transition: background-color var(--transition-speed) ease, border-color var(--transition-speed) ease;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        /* Toolbar */
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .shortcut-hint {
+            font-size: 0.75rem;
+            color: var(--ui-text-muted);
+            background: var(--ui-bg);
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+            border: 1px solid var(--ui-border);
+            margin-left: 0.25rem;
+            font-family: monospace;
+        }
+
+        /* Palette Swatches */
+        .palette-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem;
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+
+        .swatch {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 140px;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            position: relative;
+            box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05);
+            transition: transform 150ms ease, box-shadow 150ms ease;
+            text-align: left;
+        }
+
+        .swatch:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .swatch-hex {
+            font-family: var(--font-ui-heading);
+            font-weight: 700;
+            font-size: 1.125rem;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .swatch-copy-hint {
+            font-size: 0.75rem;
+            opacity: 0;
+            transition: opacity 150ms;
+        }
+        .swatch:hover .swatch-copy-hint { opacity: 0.8; }
+
+        /* Contrast Badges */
+        .contrast-info {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: auto;
+        }
+
+        .contrast-badge {
+            font-size: 0.65rem;
+            font-weight: 600;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            background: rgba(0,0,0,0.1);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            gap: 0.2rem;
+        }
+        .swatch[data-dark="true"] .contrast-badge {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .contrast-badge.pass::before { content: '✓'; color: #10b981; }
+        .contrast-badge.fail::before { content: '✕'; color: #ef4444; }
+
+        /* Live Preview Area */
+        .preview-wrapper {
+            background: #ffffff; /* Explicitly kept neutral white for accurate contrast */
+            border-radius: 0.5rem;
+            padding: 2rem;
+            border: 1px solid var(--ui-border);
+            overflow: hidden;
+            position: relative;
+        }
+        
+        html.theme-dark .preview-wrapper {
+            background: #f8f9fa; /* Keep it light and neutral even in dark mode */
+            border-color: #d1d5db;
+        }
+
+        .preview-content {
+            color: #1a1a1a; /* Neutral dark text */
+            font-family: var(--gen-font-body);
+        }
+
+        .preview-content h1 {
+            font-family: var(--gen-font-heading);
+            font-size: clamp(2rem, 5vw, 3rem);
+            line-height: 1.2;
+            margin-bottom: 0.5rem;
+            color: var(--gen-color-1); /* Accent from palette */
+        }
+
+        .preview-content h2 {
+            font-family: var(--gen-font-heading);
+            font-size: 1.25rem;
+            font-weight: 400;
+            margin-bottom: 1.5rem;
+            color: #4b5563;
+        }
+
+        .preview-content p {
+            font-family: var(--gen-font-body);
+            font-size: 1.125rem;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+            max-width: 600px;
+        }
+
+        .preview-btn {
+            background: var(--gen-color-0); /* Primary palette color */
+            color: var(--gen-color-0-text); /* Dynamic contrasting text */
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px;
+            font-family: var(--gen-font-heading);
+            font-weight: 600;
+            font-size: 1rem;
+            border: none;
+            display: inline-block;
+        }
+
+        /* Labels for generated fonts */
+        .font-labels {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--ui-border);
+        }
+        .font-label-item {
+            display: flex;
+            flex-direction: column;
+        }
+        .font-label-title {
+            font-size: 0.75rem;
+            color: var(--ui-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .font-label-value {
+            font-family: var(--font-ui-heading);
+            font-weight: 600;
+            font-size: 1rem;
+            color: var(--ui-accent);
+        }
+
+        /* Favorites Sidebar */
+        .favorites-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .favorite-item {
+            background: var(--ui-bg);
+            border: 1px solid var(--ui-border);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            transition: border-color var(--transition-speed);
+        }
+
+        .favorite-item:hover {
+            border-color: var(--ui-accent);
+        }
+
+        .fav-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .fav-fonts {
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .fav-palette {
+            display: flex;
+            height: 24px;
+            border-radius: 4px;
+            overflow: hidden;
+            width: 100%;
+        }
+
+        .fav-color {
+            flex: 1;
+        }
+
+        .fav-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .fav-btn {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 2rem 0;
+            color: var(--ui-text-muted);
+            font-size: 0.875rem;
+        }
+
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            z-index: 50;
+        }
+
+        .toast {
+            background: var(--ui-text-main);
+            color: var(--ui-surface);
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+            transform: translateY(100%);
+        }
+
+        .toast.fade-out {
+            animation: fadeOut 0.3s forwards;
+        }
+
+        @keyframes slideIn {
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeOut {
+            to { opacity: 0; transform: translateY(10px); }
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--ui-text-muted);
+            font-size: 0.875rem;
+        }
+
+        /* Utilities */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border-width: 0;
+        }
+    </style>
 </head>
-
 <body>
-<header>
-  <h1>Random Aesthetic Generator</h1>
-  <button id="themeToggle">Toggle Theme</button>
-</header>
 
-<main>
-  <div class="card">
-    <button id="shuffle">Shuffle</button>
-    <button id="save">Save</button>
-    <button id="copyCSS">Copy CSS</button>
-    <button id="exportJSON">Export JSON</button>
-  </div>
+    <header>
+        <div class="ui-heading" style="font-size: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
+            <!-- Simple SVG Logo -->
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--ui-accent)"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            Aesthetic Generator
+        </div>
+        <button id="themeToggle" class="btn-icon" aria-label="Toggle dark mode" title="Toggle Theme">
+            <!-- Sun/Moon icon updated via JS -->
+            <svg id="themeIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"></svg>
+        </button>
+    </header>
 
-  <div class="card">
-    <h2>Palette</h2>
-    <div class="swatches" id="palette"></div>
-  </div>
+    <main>
+        <!-- Left Column: Generator & Preview -->
+        <section aria-label="Generator Controls and Output">
+            <div class="toolbar">
+                <button id="btnShuffle" class="btn btn-primary" aria-label="Shuffle aesthetics (Space)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg>
+                    Shuffle <span class="shortcut-hint">Space</span>
+                </button>
+                <button id="btnSave" class="btn btn-secondary" aria-label="Save to favorites (S)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+                    Save <span class="shortcut-hint">S</span>
+                </button>
+                <button id="btnCopyCss" class="btn btn-secondary" aria-label="Copy CSS Variables (C)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    Copy CSS <span class="shortcut-hint">C</span>
+                </button>
+                <button id="btnExportJson" class="btn btn-secondary" aria-label="Export as JSON">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    JSON
+                </button>
+            </div>
 
-  <div class="card">
-    <h2>Fonts</h2>
-    <div id="fontInfo"></div>
-    <div class="preview" id="preview"></div>
-  </div>
+            <!-- Palette Card -->
+            <div class="card" aria-label="Color Palette">
+                <div class="card-header">
+                    <h2 class="ui-heading" style="font-size: 1.125rem;">Color Palette</h2>
+                    <span style="font-size: 0.75rem; color: var(--ui-text-muted);">Click swatch to copy HEX</span>
+                </div>
+                <div id="paletteContainer" class="palette-container">
+                    <!-- Swatches injected via JS -->
+                </div>
+            </div>
 
-  <div class="card">
-    <h2>Favorites</h2>
-    <div id="favorites"></div>
-  </div>
-</main>
+            <!-- Typography & Live Preview Card -->
+            <div class="card" aria-label="Typography Preview">
+                <div class="font-labels">
+                    <div class="font-label-item">
+                        <span class="font-label-title">Heading Font</span>
+                        <span id="headingFontLabel" class="font-label-value">Inter</span>
+                    </div>
+                    <div class="font-label-item">
+                        <span class="font-label-title">Body Font</span>
+                        <span id="bodyFontLabel" class="font-label-value">Roboto</span>
+                    </div>
+                </div>
 
-<footer style="text-align:center;font-size:12px;padding:1rem;">
-  Space = Shuffle · S = Save · C = Copy CSS
-</footer>
+                <div class="preview-wrapper">
+                    <div class="preview-content">
+                        <h1>Design systems make UI better.</h1>
+                        <h2>A live preview of your generated aesthetic pairing.</h2>
+                        <p>
+                            This area demonstrates how the selected heading font pairs with the body font. 
+                            The background is kept intentionally light and neutral to accurately evaluate 
+                            typographic readability and color contrast, regardless of the app's UI theme.
+                        </p>
+                        <button class="preview-btn">Interactive Element</button>
+                    </div>
+                </div>
+            </div>
+        </section>
 
-<script>
-const fonts = [
-  { heading: 'Playfair Display', body: 'Inter' },
-  { heading: 'Poppins', body: 'Roboto' },
-  { heading: 'Merriweather', body: 'Source Sans 3' },
-  { heading: 'Oswald', body: 'Inter' }
-];
+        <!-- Right Column: Favorites -->
+        <aside aria-label="Saved Favorites">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="ui-heading" style="font-size: 1.125rem;">Favorites</h2>
+                    <span id="favCount" style="font-size: 0.875rem; color: var(--ui-text-muted);">0 saved</span>
+                </div>
+                <div id="favoritesList" class="favorites-list">
+                    <!-- Favorites injected via JS -->
+                    <div class="empty-state">No favorites saved yet.<br>Press 'S' to save one!</div>
+                </div>
+            </div>
+        </aside>
+    </main>
 
-const palettes = [
-  ['#111827','#1f2937','#374151','#9ca3af'],
-  ['#ff6b6b','#ffe66d','#4ecdc4','#1a535c'],
-  ['#000','#ff0054','#00f5d4','#ffd166']
-];
+    <footer>
+        <p>Aesthetic Generator &bull; Designed for neutrality and focus.</p>
+    </footer>
 
-let current = { palette: palettes[0], fonts: fonts[0] };
+    <!-- Toasts Region (A11y Live Region) -->
+    <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
 
-function getRandomPalette() {
-  return palettes[Math.floor(Math.random() * palettes.length)];
-}
+    <!-- Scripts -->
+    <script>
+        /**
+         * Aesthetic Generator Core Logic
+         * No frameworks, strict vanilla JS.
+         */
+        (function() {
+            // --- Configuration & Data Libraries ---
+            
+            // Curated list of high-quality Google Fonts
+            const FONT_LIBRARY = {
+                headings: [
+                    'Playfair Display', 'Montserrat', 'Oswald', 'Poppins', 'Cinzel', 
+                    'Abril Fatface', 'Bebas Neue', 'Righteous', 'Space Grotesk', 'Syne',
+                    'Fraunces', 'DM Serif Display', 'Cormorant Garamond', 'Cabinet Grotesk'
+                ],
+                body: [
+                    'Lato', 'Open Sans', 'Merriweather', 'Lora', 'Source Sans 3', 
+                    'Work Sans', 'Karla', 'Inter', 'Roboto', 'Quicksand', 'Nunito', 'DM Sans'
+                ]
+            };
 
-function pickFontPair() {
-  return fonts[Math.floor(Math.random() * fonts.length)];
-}
+            // Curated initial defaults to prevent empty loading state
+            const DEFAULTS = [
+                {
+                    name: "Minimal",
+                    colors: ['#ffffff', '#f3f4f6', '#9ca3af', '#374151', '#111827'],
+                    fonts: { heading: 'Inter', body: 'Source Sans 3' }
+                },
+                {
+                    name: "Playful",
+                    colors: ['#fdfdc4', '#ffc2c2', '#ff9a9e', '#fecfef', '#a1c4fd'],
+                    fonts: { heading: 'Poppins', body: 'Quicksand' }
+                },
+                {
+                    name: "Bold",
+                    colors: ['#000000', '#2b2b2b', '#e63946', '#f1faee', '#1d3557'],
+                    fonts: { heading: 'Bebas Neue', body: 'Inter' }
+                }
+            ];
 
-function applyFonts(pair) {
-  const link = document.createElement('link');
-  link.href = `https://fonts.googleapis.com/css2?family=${pair.heading.replace(/ /g,'+')}\n  &family=${pair.body.replace(/ /g,'+')}&display=swap`;
-  link.rel = 'stylesheet';
-  document.head.appendChild(link);
+            // State
+            let state = {
+                current: null,
+                favorites: [],
+                theme: 'light'
+            };
 
-  document.getElementById('preview').style.fontFamily = pair.body;
-}
+            // --- DOM Elements Cache ---
+            const els = {
+                paletteContainer: document.getElementById('paletteContainer'),
+                headingFontLabel: document.getElementById('headingFontLabel'),
+                bodyFontLabel: document.getElementById('bodyFontLabel'),
+                previewContent: document.querySelector('.preview-content'),
+                favoritesList: document.getElementById('favoritesList'),
+                favCount: document.getElementById('favCount'),
+                themeToggle: document.getElementById('themeToggle'),
+                themeIcon: document.getElementById('themeIcon'),
+                btnShuffle: document.getElementById('btnShuffle'),
+                btnSave: document.getElementById('btnSave'),
+                btnCopyCss: document.getElementById('btnCopyCss'),
+                btnExportJson: document.getElementById('btnExportJson'),
+                toastContainer: document.getElementById('toastContainer')
+            };
 
-function renderPalette(palette) {
-  const container = document.getElementById('palette');
-  container.innerHTML = '';
+            // --- Utility Functions ---
 
-  palette.forEach(color => {
-    const div = document.createElement('div');
-    div.className = 'swatch';
-    div.style.background = color;
-    div.textContent = color;
+            /**
+             * HSL to HEX conversion for programmatic palette generation
+             */
+            function hslToHex(h, s, l) {
+                l /= 100;
+                const a = s * Math.min(l, 1 - l) / 100;
+                const f = n => {
+                    const k = (n + h / 30) % 12;
+                    const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+                    return Math.round(255 * color).toString(16).padStart(2, '0');
+                };
+                return `#${f(0)}${f(8)}${f(4)}`;
+            }
 
-    div.onclick = () => navigator.clipboard.writeText(color);
+            /**
+             * HEX to RGB conversion
+             */
+            function hexToRgb(hex) {
+                let c = hex.substring(1).split('');
+                if(c.length === 3){
+                    c= [c[0], c[0], c[1], c[1], c[2], c[2]];
+                }
+                c = '0x' + c.join('');
+                return [(c>>16)&255, (c>>8)&255, c&255];
+            }
 
-    container.appendChild(div);
-  });
-}
+            /**
+             * Calculate relative luminance for WCAG contrast
+             * Formula: https://www.w3.org/TR/WCAG20/#relativeluminancedef
+             */
+            function getLuminance(hex) {
+                const rgb = hexToRgb(hex).map(v => {
+                    v /= 255;
+                    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+                });
+                return rgb[0] * 0.2126 + rgb[1] * 0.7152 + rgb[2] * 0.0722;
+            }
 
-function renderPreview() {
-  const p = document.getElementById('preview');
-  p.innerHTML = `<h1>Heading</h1><p>Sample paragraph text.</p><button>Button</button>`;
-}
+            /**
+             * Calculate contrast ratio between two hex colors
+             */
+            function getContrast(hex1, hex2) {
+                const l1 = getLuminance(hex1);
+                const l2 = getLuminance(hex2);
+                const lightest = Math.max(l1, l2);
+                const darkest = Math.min(l1, l2);
+                return (lightest + 0.05) / (darkest + 0.05);
+            }
 
-function shuffle() {
-  current.palette = getRandomPalette();
-  current.fonts = pickFontPair();
-  applyFonts(current.fonts);
-  renderPalette(current.palette);
-  renderPreview();
-}
+            /**
+             * Determine if white or black text is better on a background
+             */
+            function getBestTextColor(bgHex) {
+                const contrastWhite = getContrast(bgHex, '#ffffff');
+                const contrastBlack = getContrast(bgHex, '#000000');
+                return contrastWhite > contrastBlack ? '#ffffff' : '#000000';
+            }
 
-function saveFavorite() {
-  let favs = JSON.parse(localStorage.getItem('aesthetic.favorites')||'[]');
-  favs.push(current);
-  localStorage.setItem('aesthetic.favorites', JSON.stringify(favs));
-  loadFavorites();
-}
+            /**
+             * Robust Clipboard API fallback
+             */
+            async function copyToClipboard(text) {
+                if (navigator.clipboard && window.isSecureContext) {
+                    try {
+                        await navigator.clipboard.writeText(text);
+                        return true;
+                    } catch (err) { /* fallback */ }
+                }
+                // Fallback using execCommand
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                textArea.style.position = "fixed";
+                textArea.style.left = "-999999px";
+                textArea.style.top = "-999999px";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    textArea.remove();
+                    return true;
+                } catch (err) {
+                    textArea.remove();
+                    return false;
+                }
+            }
 
-function loadFavorites() {
-  const container = document.getElementById('favorites');
-  container.innerHTML = '';
-  let favs = JSON.parse(localStorage.getItem('aesthetic.favorites')||'[]');
+            /**
+             * Show Toast Notification
+             */
+            function showToast(message) {
+                const toast = document.createElement('div');
+                toast.className = 'toast';
+                toast.textContent = message;
+                els.toastContainer.appendChild(toast);
+                
+                // Remove after 3 seconds
+                setTimeout(() => {
+                    toast.classList.add('fade-out');
+                    toast.addEventListener('animationend', () => toast.remove());
+                }, 3000);
+            }
 
-  favs.forEach((f,i) => {
-    const div = document.createElement('div');
-    div.textContent = f.palette.join(',');
-    div.onclick = () => {
-      current = f;
-      renderPalette(f.palette);
-      applyFonts(f.fonts);
-      renderPreview();
-    };
+            // --- Core Logic ---
 
-    const del = document.createElement('button');
-    del.textContent = 'Delete';
-    del.onclick = (e) => {
-      e.stopPropagation();
-      favs.splice(i,1);
-      localStorage.setItem('aesthetic.favorites', JSON.stringify(favs));
-      loadFavorites();
-    };
+            /**
+             * Generate a random cohesive aesthetic
+             */
+            function generateRandomAesthetic() {
+                // Pick random fonts
+                const heading = FONT_LIBRARY.headings[Math.floor(Math.random() * FONT_LIBRARY.headings.length)];
+                const body = FONT_LIBRARY.body[Math.floor(Math.random() * FONT_LIBRARY.body.length)];
 
-    div.appendChild(del);
-    container.appendChild(div);
-  });
-}
+                // Generate random palette using HSL logic for harmony
+                const baseHue = Math.floor(Math.random() * 360);
+                const schemeType = Math.floor(Math.random() * 3); // 0: Analogous, 1: Complementary, 2: Monochormatic
+                
+                let colors = [];
+                if (schemeType === 0) { // Analogous
+                    for(let i=0; i<5; i++) {
+                        colors.push(hslToHex((baseHue + (i-2)*25 + 360) % 360, 50 + Math.random()*40, 15 + i*18));
+                    }
+                } else if (schemeType === 1) { // Complementary mix
+                    colors.push(hslToHex(baseHue, 70, 15));
+                    colors.push(hslToHex(baseHue, 60, 40));
+                    colors.push(hslToHex(baseHue, 50, 85));
+                    colors.push(hslToHex((baseHue + 180) % 360, 65, 45));
+                    colors.push(hslToHex((baseHue + 180) % 360, 75, 80));
+                } else { // Monochromatic stepping
+                    for(let i=0; i<5; i++) {
+                        colors.push(hslToHex(baseHue, 40 + Math.random()*30, 10 + i*20));
+                    }
+                }
 
-function exportCSSVars() {
-  const css = current.palette.map((c,i)=>`--color-${i+1}: ${c};`).join('\n');
-  navigator.clipboard.writeText(css);
-}
+                // Shuffle colors slightly but generally keep a dark-to-light or varied flow
+                // Not purely random to ensure buttons in preview look okay. We'll sort by luminance roughly.
+                colors.sort((a,b) => getLuminance(a) - getLuminance(b));
+                
+                // Swap first and last sometimes for variety in the "accent" slot
+                if (Math.random() > 0.5) {
+                    const temp = colors[0];
+                    colors[0] = colors[colors.length-1];
+                    colors[colors.length-1] = temp;
+                }
 
-function exportJSON() {
-  const data = JSON.stringify(current);
-  const blob = new Blob([data], {type:'application/json'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'aesthetic.json';
-  a.click();
-}
+                return {
+                    id: Date.now().toString(),
+                    colors: colors,
+                    fonts: { heading, body }
+                };
+            }
 
-// Events
+            /**
+             * Dynamically load Google Fonts
+             */
+            function loadFonts(headingFont, bodyFont) {
+                let link = document.getElementById('dynamic-gfonts');
+                if (!link) {
+                    link = document.createElement('link');
+                    link.id = 'dynamic-gfonts';
+                    link.rel = 'stylesheet';
+                    document.head.appendChild(link);
+                }
+                const formattedHeading = headingFont.replace(/ /g, '+');
+                const formattedBody = bodyFont.replace(/ /g, '+');
+                // Build URL for both families with basic weights
+                link.href = `https://fonts.googleapis.com/css2?family=${formattedHeading}:wght@400;700&family=${formattedBody}:wght@400;600&display=swap`;
+            }
 
-document.getElementById('shuffle').onclick = shuffle;
-document.getElementById('save').onclick = saveFavorite;
-document.getElementById('copyCSS').onclick = exportCSSVars;
-document.getElementById('exportJSON').onclick = exportJSON;
+            /**
+             * Apply aesthetic to UI
+             */
+            function applyAesthetic(aesthetic) {
+                state.current = aesthetic;
+                
+                // Load Fonts
+                loadFonts(aesthetic.fonts.heading, aesthetic.fonts.body);
+                
+                // Update Labels
+                els.headingFontLabel.textContent = aesthetic.fonts.heading;
+                els.bodyFontLabel.textContent = aesthetic.fonts.body;
 
-document.getElementById('themeToggle').onclick = () => {
-  document.documentElement.classList.toggle('theme-dark');
-  localStorage.setItem('aesthetic.settings', document.documentElement.classList.contains('theme-dark'));
-};
+                // Update Preview CSS Variables
+                els.previewContent.style.setProperty('--gen-font-heading', `"${aesthetic.fonts.heading}", sans-serif`);
+                els.previewContent.style.setProperty('--gen-font-body', `"${aesthetic.fonts.body}", sans-serif`);
+                
+                // Map palette to preview (using colors[0] as primary accent, and something contrasting for text)
+                const accentColor = aesthetic.colors[0];
+                const altColor = aesthetic.colors[Math.floor(aesthetic.colors.length / 2)];
+                els.previewContent.style.setProperty('--gen-color-0', accentColor);
+                els.previewContent.style.setProperty('--gen-color-0-text', getBestTextColor(accentColor));
+                els.previewContent.style.setProperty('--gen-color-1', altColor);
 
-window.addEventListener('keydown', e => {
-  if (e.code === 'Space') shuffle();
-  if (e.key.toLowerCase() === 's') saveFavorite();
-  if (e.key.toLowerCase() === 'c') exportCSSVars();
-});
+                // Render Palette Swatches
+                renderPalette(aesthetic.colors);
+            }
 
-// Init
-shuffle();
-loadFavorites();
-</script>
+            /**
+             * Render the color palette swatches
+             */
+            function renderPalette(colors) {
+                els.paletteContainer.innerHTML = '';
+                
+                colors.forEach(hex => {
+                    const isDark = getLuminance(hex) < 0.3;
+                    const textColor = isDark ? '#ffffff' : '#000000';
+                    
+                    // Contrast vs White/Black (WCAG AA Normal Text = 4.5:1)
+                    const cw = getContrast(hex, '#ffffff');
+                    const cb = getContrast(hex, '#000000');
+                    const passW = cw >= 4.5;
+                    const passB = cb >= 4.5;
+
+                    const btn = document.createElement('button');
+                    btn.className = 'swatch';
+                    btn.style.backgroundColor = hex;
+                    btn.style.color = textColor;
+                    btn.setAttribute('aria-label', `Copy color ${hex}`);
+                    btn.setAttribute('data-dark', isDark);
+                    
+                    btn.innerHTML = `
+                        <div>
+                            <div class="swatch-hex">${hex}</div>
+                            <div class="swatch-copy-hint">Click to copy</div>
+                        </div>
+                        <div class="contrast-info">
+                            <span class="contrast-badge ${passW ? 'pass' : 'fail'}" title="Contrast vs White: ${cw.toFixed(1)}">W</span>
+                            <span class="contrast-badge ${passB ? 'pass' : 'fail'}" title="Contrast vs Black: ${cb.toFixed(1)}">B</span>
+                        </div>
+                    `;
+
+                    btn.addEventListener('click', async () => {
+                        const success = await copyToClipboard(hex);
+                        if(success) showToast(`Copied ${hex} to clipboard!`);
+                    });
+
+                    els.paletteContainer.appendChild(btn);
+                });
+            }
+
+            // --- State Management & Storage ---
+
+            function saveCurrent() {
+                // Prevent duplicate saving
+                const exists = state.favorites.some(f => 
+                    JSON.stringify(f.colors) === JSON.stringify(state.current.colors) &&
+                    f.fonts.heading === state.current.fonts.heading &&
+                    f.fonts.body === state.current.fonts.body
+                );
+                
+                if (exists) {
+                    showToast('Aesthetic already in favorites!');
+                    return;
+                }
+
+                // Add to start of array
+                const newFav = { ...state.current, id: Date.now().toString() };
+                state.favorites.unshift(newFav);
+                
+                // Limit to 20
+                if (state.favorites.length > 20) state.favorites.pop();
+                
+                saveData();
+                renderFavorites();
+                showToast('Saved to favorites!');
+            }
+
+            function deleteFavorite(id) {
+                state.favorites = state.favorites.filter(f => f.id !== id);
+                saveData();
+                renderFavorites();
+                showToast('Removed from favorites.');
+            }
+
+            function renderFavorites() {
+                els.favCount.textContent = `${state.favorites.length} saved`;
+                
+                if (state.favorites.length === 0) {
+                    els.favoritesList.innerHTML = `<div class="empty-state">No favorites saved yet.<br>Press 'S' to save one!</div>`;
+                    return;
+                }
+
+                els.favoritesList.innerHTML = '';
+                
+                state.favorites.forEach(fav => {
+                    const el = document.createElement('div');
+                    el.className = 'favorite-item';
+                    
+                    // Generate mini palette bar
+                    const paletteHtml = fav.colors.map(c => `<div class="fav-color" style="background-color: ${c}"></div>`).join('');
+
+                    el.innerHTML = `
+                        <div class="fav-header">
+                            <div class="fav-fonts">${fav.fonts.heading} / ${fav.fonts.body}</div>
+                            <div class="fav-actions">
+                                <button class="btn btn-secondary fav-btn apply-btn" aria-label="Apply aesthetic">Apply</button>
+                                <button class="btn btn-secondary fav-btn del-btn" style="color: var(--ui-danger);" aria-label="Delete aesthetic">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="fav-palette">
+                            ${paletteHtml}
+                        </div>
+                    `;
+
+                    // Listeners for list items
+                    el.querySelector('.apply-btn').addEventListener('click', () => {
+                        applyAesthetic(fav);
+                        showToast('Aesthetic applied!');
+                    });
+                    
+                    el.querySelector('.del-btn').addEventListener('click', () => {
+                        deleteFavorite(fav.id);
+                    });
+
+                    els.favoritesList.appendChild(el);
+                });
+            }
+
+            function saveData() {
+                localStorage.setItem('aesthetic.favorites', JSON.stringify(state.favorites));
+                localStorage.setItem('aesthetic.settings', JSON.stringify({ theme: state.theme }));
+            }
+
+            function loadData() {
+                try {
+                    const savedFavs = localStorage.getItem('aesthetic.favorites');
+                    if (savedFavs) state.favorites = JSON.parse(savedFavs);
+                    
+                    const savedSettings = localStorage.getItem('aesthetic.settings');
+                    if (savedSettings) {
+                        const settings = JSON.parse(savedSettings);
+                        setTheme(settings.theme || 'light');
+                    } else {
+                        // Check system pref
+                        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                            setTheme('dark');
+                        } else {
+                            setTheme('light');
+                        }
+                    }
+                } catch (e) {
+                    console.error("Error loading data from localStorage", e);
+                }
+            }
+
+            // --- Theme Handling ---
+            
+            function setTheme(theme) {
+                state.theme = theme;
+                if (theme === 'dark') {
+                    document.documentElement.classList.add('theme-dark');
+                    els.themeIcon.innerHTML = `<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>`; // Moon
+                } else {
+                    document.documentElement.classList.remove('theme-dark');
+                    els.themeIcon.innerHTML = `<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>`; // Sun
+                }
+                saveData();
+            }
+
+            // --- Exports ---
+            
+            async function exportCSSVars() {
+                if (!state.current) return;
+                
+                let css = `/* Generated Aesthetic */\n:root {\n`;
+                state.current.colors.forEach((hex, i) => {
+                    css += `  --color-${i+1}: ${hex};\n`;
+                });
+                css += `\n  --font-heading: '${state.current.fonts.heading}', sans-serif;\n`;
+                css += `  --font-body: '${state.current.fonts.body}', sans-serif;\n`;
+                css += `}`;
+
+                const success = await copyToClipboard(css);
+                if(success) showToast('Copied CSS Variables!');
+            }
+
+            async function exportJSON() {
+                if (!state.current) return;
+                
+                const data = {
+                    palette: state.current.colors,
+                    fonts: state.current.fonts
+                };
+                
+                const jsonStr = JSON.stringify(data, null, 2);
+                const success = await copyToClipboard(jsonStr);
+                if(success) showToast('Copied JSON format!');
+            }
+
+
+            // --- Initialization & Event Listeners ---
+
+            function init() {
+                loadData();
+                renderFavorites();
+                
+                // Start with "Minimal" default to avoid empty layout flash
+                applyAesthetic(DEFAULTS[0]);
+
+                // Bind UI buttons
+                els.btnShuffle.addEventListener('click', () => applyAesthetic(generateRandomAesthetic()));
+                els.btnSave.addEventListener('click', saveCurrent);
+                els.btnCopyCss.addEventListener('click', exportCSSVars);
+                els.btnExportJson.addEventListener('click', exportJSON);
+                
+                els.themeToggle.addEventListener('click', () => {
+                    setTheme(state.theme === 'light' ? 'dark' : 'light');
+                });
+
+                // Global Keyboard Shortcuts
+                window.addEventListener('keydown', (e) => {
+                    // Ignore shortcuts if typing in input/textarea (if any exist in future)
+                    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName) || e.target.isContentEditable) {
+                        return;
+                    }
+
+                    // Space = Shuffle
+                    if (e.code === 'Space') {
+                        e.preventDefault(); // Prevent page scroll
+                        applyAesthetic(generateRandomAesthetic());
+                    }
+                    // S = Save
+                    if (e.key.toLowerCase() === 's') {
+                        e.preventDefault();
+                        saveCurrent();
+                    }
+                    // C = Copy CSS
+                    if (e.key.toLowerCase() === 'c') {
+                        e.preventDefault();
+                        exportCSSVars();
+                    }
+                });
+            }
+
+            // Start App
+            init();
+
+        })();
+    </script>
 </body>
 </html>
